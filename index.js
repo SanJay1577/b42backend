@@ -1,89 +1,129 @@
-const fs = require("fs");
-const os = require("os")
-// const [ , , num1,num2, msg, numofFiles] = process.argv;
+const express = require("express");
+const {MongoClient} = require("mongodb")
+const fs = require("fs")
+const app = express();
+const path = require("path")
 
-// const sum = (n1, n2) => n1+n2;
-// console.log(sum(+num1, +num2));
+const currentDir = path.join(__dirname, "express"); 
+console.log(currentDir)
 
-// const welcome = (message)=>{
-//  console.log(`Hi ${message} welcome to node js`)
-// }
-// welcome(msg);
+const secret = "hey i'm from new file"
 
-///file reading 
-fs.readFile("./sample.txt", "utf-8", (err, data)=>{
-    if(err) {
-        console.log(err)
-    } else {
-        console.log("file read succesfully")
-        console.log(data)
-    }
-})
-const content = "new from file inbuild node package"
-
-// file create a file 
-fs.writeFile("./newfile.txt", content, (err)=>{
+fs.writeFile(`${currentDir}/sum.txt`,secret, (err)=>{
     if(err){
         console.log(err)
     }else {
-        console.log("file written succesfull")
+        console.log("file created")
     }
-})
-const newContent = "\nNew content added"
-// update in the existing file 
-fs.appendFile("./newfile.txt",newContent, (err)=>{
-    if(err){
-        console.log(err)
-    }else {
-        console.log("file updated successfully")
-    } 
 } )
+//Mongo Db Connection 
 
-// delete a file
-// fs.unlink("./newfile.txt", (err)=>{
-//     if(err){
-//     console.log(err)
-//     }else {
-//         console.log("deleted the file")
-//     }
-// })
+const MONGO_URL = "mongodb://127.0.0.1:27017/guvi"
 
-fs.readdir("./newfolder/", (err, data)=>{
-    console.log("Directory", data);
+async function createConnection(){
+ const client = new MongoClient(MONGO_URL)
+ await client.connect(); 
+ console.log("Mongodb is succesfuly connected")
+ return client
+}
+
+const client = createConnection();
+
+
+
+
+
+app.use(express.static("express")); // loading the static file
+app.use(express.json()) // middleware tells server to use json
+
+app.get("/static", (req, res)=>{
+    res.sendFile(path.join(__dirname, "express/sum.txt"))
+})
+
+const students = [
+    {
+     "name": "Sharmila ",
+     "batch": "B42 WD Tamil",
+     "gender": "female",
+     "yearsOfExperience": "2",
+     "id": "5"
+    },
+    {
+     "name": "Sanjay",
+     "batch": "B42WD",
+     "gender": "male",
+     "yearsOfExperience": "yearsOfExperience 6",
+     "id": "6",
+     "experience": "2",
+     "fullWidth": "n"
+    },
+    {
+     "name": "raja",
+     "batch": "manthiri",
+     "gender": "male",
+     "yearsOfExperience": "yearsOfExperience 7",
+     "id": "7",
+     "experience": "1"
+    }
+   ]
+
+app.get("/", (req, res)=>{
+   res.send("Hello i'm working fine")
+})
+
+// parameters 
+app.get("/students/:id", async(req, res)=>{
+    const {id} = req.params; 
+    console.log(req.params)
+    const student = await (await client)
+    .db("guvi")
+    .collection("students")
+    .findOne({_id :id})
+    res.status(200).send(student)
 })
 
 
-// process.argv folder = create file five files (loop)
+//using query http://localhost:9000/students?gender=male
 
-// eg
-// backup1.txt
-// backup2.txt
+app.get("/students", async (req, res)=>{
+    console.log(req.query)
+    // query conditions
+    if (req.query.age){
+        req.query.age = +req.query.age;
+    }
+    //data retrival from database 
+     const studentsData =  await (await client)
+    .db("guvi")
+    .collection("students")
+    .find(req.query)
+    .toArray() // to return all data from an array 
+    res.status(200).json(studentsData)
+})
 
-// const [,,num] = process.argv
+app.post("/students", async (req, res)=>{
+ const newData = req.body; 
+ const result = await (await client)
+ .db("guvi")
+ .collection("students")
+ .insertOne(newData)
+ res.status(201).send(result)
+})
+
+app.put("/students/:id", (req, res)=>{
+    const {id} = req.params
+    const editStudent = students.find((stud)=>stud.id === id); 
+    editStudent.name = req.body.name,
+    editStudent.batch= req.body.batch,
+    editStudent.gender= req.body.gender,
+    editStudent.yearsOfExperience= req.body.yearsOfExperience,
+    editStudent.id= req.body.id,
+    res.send(students)
+})
 
 
-//delete all the files you created in that directory (readdir unink)
+app.delete("/students/:id", (req, res)=>{
+   
+})
 
 
-// when ever it is required 
-// readfileSync(), writefileSync(), appendfileSync()
-
-// date functions
-let time = Date.now()
-console.log(time)
-let date = new Date();
-let utc = date.toUTCString();
-let today = date.getDate();
-let month = date.getMonth();
-let year = date.getFullYear();
-console.log("date", date)
-console.log("utc", utc)
-console.log("all functions are :", today, month, year)
-
-
-// os functions 
- console.log("Os version-------", os.version());
- console.log("Free Memory-------", os.freemem());
- console.log("Total Memory------", os.totalmem());
- console.log("CPU-------", os.cpus());
-
+app.listen(9000, ()=>console.log(`server started localhost:9000`))
