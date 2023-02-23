@@ -1,24 +1,16 @@
-const express = require("express");
-const {MongoClient} = require("mongodb")
-const fs = require("fs")
-const app = express();
-const path = require("path")
+import express from "express"
+// const express = require("express");
+import {MongoClient} from "mongodb"
+import  Obj from "mongodb"
+import dotenv from "dotenv"
 
-const currentDir = path.join(__dirname, "express"); 
-console.log(currentDir)
+dotenv.config()
+const app = express();
+var ObjectId = Obj.ObjectId;
 
 const secret = "hey i'm from new file"
 
-fs.writeFile(`${currentDir}/sum.txt`,secret, (err)=>{
-    if(err){
-        console.log(err)
-    }else {
-        console.log("file created")
-    }
-} )
-//Mongo Db Connection 
-
-const MONGO_URL = "mongodb://127.0.0.1:27017/guvi"
+const MONGO_URL =process.env.MONGO_URL
 
 async function createConnection(){
  const client = new MongoClient(MONGO_URL)
@@ -27,7 +19,7 @@ async function createConnection(){
  return client
 }
 
-const client = createConnection();
+export const client = await createConnection();
 
 
 
@@ -78,7 +70,7 @@ app.get("/students/:id", async(req, res)=>{
     const student = await (await client)
     .db("guvi")
     .collection("students")
-    .findOne({_id :id})
+    .findOne({_id :new ObjectId(id)})
     res.status(200).send(student)
 })
 
@@ -109,21 +101,34 @@ app.post("/students", async (req, res)=>{
  res.status(201).send(result)
 })
 
-app.put("/students/:id", (req, res)=>{
+app.put("/students/:id", async(req, res)=>{
     const {id} = req.params
-    const editStudent = students.find((stud)=>stud.id === id); 
-    editStudent.name = req.body.name,
-    editStudent.batch= req.body.batch,
-    editStudent.gender= req.body.gender,
-    editStudent.yearsOfExperience= req.body.yearsOfExperience,
-    editStudent.id= req.body.id,
-    res.send(students)
+  const updatedStudent = req.body
+  console.log(req.body)
+  const result = await (await client)
+  .db("guvi")
+  .collection("students")
+  .updateOne({_id: new ObjectId(id)}, {$set:updatedStudent})
+   res.status(200).send(result)
 })
 
 
-app.delete("/students/:id", (req, res)=>{
-   
+app.delete("/students/:id", async(req, res)=>{
+    const {id} = req.params
+    const result = await (await client)
+    .db("guvi")
+    .collection("students")
+    .deleteOne({_id:new ObjectId(id)})
+    res.status(200).send(result)
 })
 
+
+app.post("/students/many", async(req, res)=>{
+    const result = await (await client)
+    .db("guvi")
+    .collection("students")
+    .insertMany(req.body)
+    res.status(201).send(result)
+})
 
 app.listen(9000, ()=>console.log(`server started localhost:9000`))
