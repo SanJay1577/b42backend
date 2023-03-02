@@ -1,5 +1,8 @@
 import express from "express"
 import { addBulckStudents, addStudent, deleteStudent, editStudents, getStudenteByParams, getStudents } from "../controllers/students.js";
+import jwt from "jsonwebtoken"
+import { getUserById } from "../controllers/users.js";
+
 
 
 
@@ -22,15 +25,17 @@ router.get("/:id", async(req, res)=>{
 
 // ussing query params
 router.get("/", async (req, res)=>{
-    console.log(req.query)
     // query conditions
     if (req.query.age){
         req.query.age = +req.query.age;
     }
     try {
 
+        const token = req.headers["x-auth-token"];
+        console.log(token)
+        jwt.verify(token, process.env.SECRET_KEY)
             //data retrival from database 
-    const studentsData =  await getStudents(req)
+        const studentsData =  await getStudents(req)
 
     if (studentsData.length<=0) {
         res.status(404).json({data:"No Content available"})
@@ -96,5 +101,6 @@ router.post("/many", async(req, res)=>{
      }
 
 })
+
 
 export const studentsRouter = router

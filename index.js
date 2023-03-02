@@ -3,6 +3,7 @@ import express from "express"
 import dotenv from "dotenv"
 import { studentsRouter } from "./routes/students.js"
 import cors from "cors"
+import { userRouter } from "./routes/users.js"
 
 // env configurations 
 dotenv.config()
@@ -19,6 +20,7 @@ app.get("/", (req, res)=>{
 })
 
 app.use("/students", studentsRouter)
+app.use("/users", userRouter)
 
 // http server initialization
 app.listen(PORT, ()=>console.log(`server started localhost:${PORT}`))
@@ -28,3 +30,4 @@ app.listen(PORT, ()=>console.log(`server started localhost:${PORT}`))
 // app.get("/static", (req, res)=>{
 //     res.sendFile(path.join(__dirname, "express/sum.txt"))
 // })
+
